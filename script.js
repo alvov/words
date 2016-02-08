@@ -4,9 +4,8 @@
     var IMAGE_SRC = 'IMG_3660.JPG'; // 'img.jpg'
     var COLOR_LEVELS_NUM = 5;
     var RATIO_THRESHOLD = 0.17;
-    var MAX_VARIANTS = 5;
     var colorThresholdWindow = 255 / (COLOR_LEVELS_NUM + 1);
-    var gridSize = 15;
+    var gridSize = 20;
     var FONT_FAMILY = 'Impact, sans-serif';
 
     var image = new Image();
@@ -115,8 +114,7 @@
                         value: Infinity
                     };
                     for (var j = 0; j < words.length; j++) {
-                        // todo vertical orientation
-                        for (var k = 0; k < 1; k++) {
+                        for (var k = 0; k < 2; k++) {
                             var ratioDelta = Math.abs(words[j].ratio - currentCellRectangles[i].ratio[k]);
                             if (minRatioDelta.value > ratioDelta) {
                                 minRatioDelta.value = ratioDelta;
@@ -139,7 +137,7 @@
                 if (maxValidRatioValueIndex === -1) {
                     maxValidRatioValueIndex = minRatioDeltas.length;
                 }
-                var selectedRectIndex = Math.floor(Math.random() * Math.min(MAX_VARIANTS, maxValidRatioValueIndex));
+                var selectedRectIndex = Math.floor(Math.random() * maxValidRatioValueIndex);
                 var selectedRect = {
                     top: minRatioDeltas[selectedRectIndex].rect.pos[0][0] * gridSize,
                     right: minRatioDeltas[selectedRectIndex].rect.pos[1][1] * gridSize + gridSize,
@@ -148,12 +146,25 @@
                 };
                 // place word
                 filterContext.fillStyle = 'rgb(' + new Array(3).fill(minRatioDeltas[selectedRectIndex].rect.color).join() + ')';
-                filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + FONT_FAMILY;
-                filterContext.fillText(
-                    minRatioDeltas[selectedRectIndex].word.word,
-                    (selectedRect.right - selectedRect.left) / 2 + selectedRect.left,
-                    (selectedRect.bottom - selectedRect.top) / 2 + selectedRect.top
-                );
+                if (minRatioDeltas[selectedRectIndex].orient === 'h') {
+                    filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + FONT_FAMILY;
+                    filterContext.fillText(
+                        minRatioDeltas[selectedRectIndex].word.word,
+                        (selectedRect.right - selectedRect.left) / 2 + selectedRect.left,
+                        (selectedRect.bottom - selectedRect.top) / 2 + selectedRect.top
+                    );
+                } else {
+                    filterContext.save();
+                    filterContext.translate(selectedRect.right, selectedRect.top);
+                    filterContext.rotate(Math.PI / 2);
+                    filterContext.font = (selectedRect.right - selectedRect.left) + 'px ' + FONT_FAMILY;
+                    filterContext.fillText(
+                        minRatioDeltas[selectedRectIndex].word.word,
+                        (selectedRect.bottom - selectedRect.top) / 2,
+                        (selectedRect.right - selectedRect.left) / 2
+                    );
+                    filterContext.restore();
+                }
 
                 // exclude grid cells
                 for (
@@ -174,6 +185,12 @@
     };
     image.src = IMAGE_SRC;
 
+    /**
+     * Returns canvas context with defined width/height
+     * @param {string} id
+     * @param {Object} size
+     * @returns {CanvasRenderingContext2D}
+     */
     function getCanvasContext(id, size) {
         var canvasNode = document.getElementById(id);
         canvasNode.width = size.width;
@@ -181,6 +198,12 @@
         return canvasNode.getContext('2d');
     }
 
+    /**
+     * Transforms <imageData> pixel to grey scale
+     * @param {Array} rgba
+     * @param {number} i - pixel index
+     * @param {Object} imageData
+     */
     function greyScale(rgba, i, imageData) {
         var lightness = Math.floor((rgba[0] + rgba[1] + rgba[2]) / 3);
         lightness = thresholdLightness(lightness);
@@ -190,6 +213,11 @@
         imageData.data[i + 3] = rgba[3];
     }
 
+    /**
+     * Returns closest threshold level for a given lightness value
+     * @param {number} lightness
+     * @returns {number}
+     */
     function thresholdLightness(lightness) {
         for (var i = 0, level = 0; i <= COLOR_LEVELS_NUM; i++, level += colorThresholdWindow) {
             if (lightness < level + colorThresholdWindow / 2) {
@@ -199,6 +227,12 @@
         return 255;
     }
 
+    /**
+     * Returns mean lightness value for given pixels
+     * @param {Array} pixels
+     * @param {Object} imageData
+     * @returns {number}
+     */
     function getMeanLightness(pixels, imageData) {
         var meanLightness = pixels.reduce(function(sum, pixelIndex) {
             return sum + imageData[pixelIndex];
