@@ -9,7 +9,10 @@
     var FONT_FAMILY = 'Impact, sans-serif';
 
     var image = new Image();
-    image.onload = function() {
+    image.onload = main;
+    image.src = IMAGE_SRC;
+
+    function main() {
         var size = {};
         if (window.innerWidth / window.innerHeight > image.width / image.height) {
             size.height = window.innerHeight;
@@ -18,9 +21,17 @@
             size.width = window.innerWidth;
             size.heigth = Math.floor(window.innerWidth / image.width * image.height)
         }
-        var defaultContext = getCanvasContext('default-canvas', size);
-        var filterContext = getCanvasContext('filter-canvas', size);
 
+        var sourceCanvasSize = {
+            width: Math.round(size.width / gridSize),
+            height: Math.round(size.height / gridSize)
+        };
+        var sourceContext = createCanvasContext(sourceCanvasSize, false);
+        var filterContext = createCanvasContext(size, true);
+
+        // put image to canvas
+        sourceContext.drawImage(image, 0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
+        var sourceImageData = sourceContext.getImageData(0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
         // format vocabulary
         var words = window.vocabulary.trim().split('\n')
             .map(function(word) {
@@ -32,43 +43,23 @@
             .sort(function(a, b) {
                 return a.ratio - b.ratio;
             });
-
-        defaultContext.drawImage(image, 0, 0, size.width, size.height);
-        var defaultImageData = defaultContext.getImageData(0, 0, size.width, size.height);
-        var filterImageData = filterContext.createImageData(size.width, size.height);
-        // greyscale and threshold
-        for (var i = 0; i < defaultImageData.data.length; i += 4) {
-            greyScale([
-                defaultImageData.data[i],
-                defaultImageData.data[i + 1],
-                defaultImageData.data[i + 2],
-                defaultImageData.data[i + 3]
-            ], i, filterImageData);
-        }
-        // pixelate
+        // greyscale, threshold, construct grid array
         var gridCells = [];
-        for (var gridRow = 0; gridRow < size.height; gridRow += gridSize) {
+        for (var gridRow = 0; gridRow < sourceCanvasSize.height; gridRow++) {
             var gridRowCells = [];
-            for (var gridCol = 0; gridCol < size.width; gridCol += gridSize) {
-                var gridPixels = [];
-                for (var pixelRow = gridRow; (pixelRow < gridRow + gridSize) && (pixelRow < size.height); pixelRow++) {
-                    for (var pixelCol = gridCol; (pixelCol < gridCol + gridSize) && (pixelCol < size.width); pixelCol++) {
-                        var index = 4 * (pixelCol + pixelRow * size.width);
-                        gridPixels.push(index);
-                    }
-                }
-                var meanLightness = getMeanLightness(gridPixels, filterImageData.data);
-                gridPixels.forEach(function(i) {
-                    for (var j = 0; j < 3; j++) {
-                        filterImageData.data[i + j] = meanLightness;
-                    }
-                });
+            for (var gridCol = 0; gridCol < sourceCanvasSize.width; gridCol++) {
+                var i = (gridRow * sourceCanvasSize.width + gridCol) * 4;
                 gridRowCells.push({
-                    color: meanLightness
+                    color: greyScale([
+                        sourceImageData.data[i],
+                        sourceImageData.data[i + 1],
+                        sourceImageData.data[i + 2]
+                    ])
                 });
             }
             gridCells.push(gridRowCells);
         }
+
         filterContext.textAlign = 'center';
         filterContext.textBaseline = 'middle';
 
@@ -182,35 +173,31 @@
                 }
             }
         }
-    };
-    image.src = IMAGE_SRC;
+    }
 
     /**
-     * Returns canvas context with defined width/height
-     * @param {string} id
+     * Returns context of created canvas
      * @param {Object} size
+     * @param {boolean} appendToDOM
      * @returns {CanvasRenderingContext2D}
      */
-    function getCanvasContext(id, size) {
-        var canvasNode = document.getElementById(id);
+    function createCanvasContext(size, appendToDOM) {
+        var canvasNode = document.createElement('canvas');
         canvasNode.width = size.width;
         canvasNode.height = size.height;
+        if (appendToDOM) {
+            document.body.appendChild(canvasNode);
+        }
         return canvasNode.getContext('2d');
     }
 
     /**
-     * Transforms <imageData> pixel to grey scale
-     * @param {Array} rgba
-     * @param {number} i - pixel index
-     * @param {Object} imageData
+     * Returns pixel lightness value
+     * @param {Array} rgb
      */
-    function greyScale(rgba, i, imageData) {
-        var lightness = Math.floor((rgba[0] + rgba[1] + rgba[2]) / 3);
-        lightness = thresholdLightness(lightness);
-        for (var j = 0; j < 3; j++) {
-            imageData.data[i + j] = lightness;
-        }
-        imageData.data[i + 3] = rgba[3];
+    function greyScale(rgb) {
+        var lightness = Math.floor((rgb[0] + rgb[1] + rgb[2]) / 3);
+        return thresholdLightness(lightness);
     }
 
     /**
