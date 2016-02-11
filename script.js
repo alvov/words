@@ -84,7 +84,7 @@
 
         setState({
             imageSrc: 'IMG_3660.JPG',
-            colors: 5,
+            colors: 7,
             gridSize: 20,
             font: 'Impact, sans-serif',
             vocabularyPreset: 'js',
@@ -118,6 +118,10 @@
             if ('colors' in oldState) {
                 formNode['mf-colors'].value = state.colors;
                 formNode['mf-colors-output'].value = state.colors;
+            }
+
+            if ('font' in oldState) {
+                formNode['mf-font'].value = state.font;
             }
 
             if ('vocabularyPreset' in oldState) {
@@ -322,8 +326,8 @@
      * @returns {number}
      */
     function thresholdLightness(lightness) {
-        var colorThresholdWindow = 255 / (state.colors + 1);
-        for (var i = 0, level = 0; i <= state.colors; i++, level += colorThresholdWindow) {
+        var colorThresholdWindow = 255 / (state.colors - 1);
+        for (var i = 0, level = 0; i < state.colors; i++, level += colorThresholdWindow) {
             if (lightness < level + colorThresholdWindow / 2) {
                 return Math.floor(level);
             }

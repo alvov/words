@@ -17,14 +17,15 @@ canvas {
     position: absolute;
     top: 10px;
     left: 10px;
-    width: 52px;
-    height: 24px;
+    width: 24px;
+    height: 0;
+    padding: 24px 0 0;
     overflow: hidden;
     background: #fff;
-    border-radius: 2px;
+    border-radius: 12px;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, .6);
     font: 11px/14px Arial, sans-serif;
-    transition: width .3s .3s, height .3s;
+    transition: width .3s .3s, height .3s, border-radius .3s;
     opacity: .97;
     text-align: center;
 }
@@ -34,8 +35,9 @@ canvas {
     }
     .form-expand-input:checked + .form {
         width: 220px;
-        height: 300px;
-        transition: width .4s, height .4s .4s;
+        height: 276px;
+        border-radius: 2px;
+        transition: width .4s, height .4s .4s, border-radius .4s .4s;
     }
 
     .form-row {
@@ -55,9 +57,29 @@ canvas {
         font-weight: bold;
     }
         .form-label_expand {
-            padding: 5px 10px;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
+            transition: transform .4s .2s;
         }
+        .form-label_expand::before,
+        .form-label_expand::after {
+            content: '';
+            display: block;
+            width: 50%;
+            box-shadow: 0 0 0 1px #000;
+            margin: 50% auto;
+        }
+        .form-label_expand::after {
+            transform: rotate(90deg);
+        }
+            .form-expand-input:checked + .form .form-label_expand {
+                transform: rotate(45deg);
+                transition: transform .2s .2s;
+            }
 
     .form input[type=text],
     .form input[type=range] {

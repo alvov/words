@@ -6,26 +6,27 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <canvas id="canvas"></canvas>
     <input type="checkbox" id="mf-expanded" form="mf-controls" class="form-expand-input"/>
     <form id="mf-controls" class="form">
-        <label for="mf-expanded" class="form-label form-label_expand">MENU</label>
+        <label for="mf-expanded" class="form-label form-label_expand"></label>
         <div class="form-row">
             <label for="mf-image-input" class="form-label">Source image</label>
             <input type="file" id="mf-image-input" required/>
         </div>
         <div class="form-row">
             <label for="mf-grid-size" class="form-label">Grid size</label>
-            <input type="range" id="mf-grid-size" name="gridsize" min="10" max="50" step="5" value="20" required/>
+            <input type="range" id="mf-grid-size" name="gridsize" min="10" max="50" step="5" required/>
             <output for="mf-grid-size" id="mf-grid-size-output">20</output>
         </div>
         <div class="form-row">
             <label for="mf-colors" class="form-label">Colors</label>
-            <input type="range" id="mf-colors" min="1" max="10" value="5" required/>
+            <input type="range" id="mf-colors" min="2" max="10" required/>
             <output for="mf-colors" id="mf-colors-output">5</output>
         </div>
         <div class="form-row">
             <label for="mf-font" class="form-label">Font</label>
-            <input type="text" id="mf-font" value="Impact, sans-serif" required/>
+            <input type="text" id="mf-font" required/>
         </div>
         <div class="form-row form-row_vocabulary">
             <select id="mf-vocabulary-presets" class="form-vocabulary-list">
@@ -33,14 +34,13 @@
                 <option value="js">JS</option>
             </select>
             <label for="mf-vocabulary" class="form-label">Vocabulary</label>
-            <textarea id="mf-vocabulary" required></textarea>
+            <textarea id="mf-vocabulary" required title="Enter space-separated words"></textarea>
         </div>
         <div class="form-row form-row_submit">
             <a href="#" id="download-link" download="word-image.png" class="form-link">Download image</a>
             <input type="submit" id="mf-submit" value="Apply">
         </div>
     </form>
-    <canvas id="canvas"></canvas>
     <script src="vocabulary.js"></script>
     <script src="script.js"></script>
 </body>
