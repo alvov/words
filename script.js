@@ -1,39 +1,158 @@
 (function() {
     'use strict';
 
-    var IMAGE_SRC = 'IMG_3660.JPG'; // 'img.jpg'
-    var COLOR_LEVELS_NUM = 5;
     var RATIO_THRESHOLD = 0.17;
-    var colorThresholdWindow = 255 / (COLOR_LEVELS_NUM + 1);
-    var gridSize = 20;
-    var FONT_FAMILY = 'Impact, sans-serif';
+
+    var vocabularies = {
+        js: vocabulary
+    };
 
     var image = new Image();
-    image.onload = main;
-    image.src = IMAGE_SRC;
+    var canvasNode = document.getElementById('canvas');
 
-    function main() {
+    var state = {
+        imageSrc: null,
+        colors: null,
+        gridSize: null,
+        font: null,
+        vocabularyPreset: null,
+        vocabulary: null,
+        downloadLink: null
+    };
+
+    // form events
+    (function() {
+        var formNode = document.forms['mf-controls'];
+
+        image.addEventListener('load', function() {
+            formNode['mf-submit'].disabled = false;
+        });
+
+        formNode['mf-image-input'].addEventListener('change', function(e) {
+            if (/jpg|jpeg|png|gif/i.test(e.target.value.split('.').pop())) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    setState({ imageSrc: e.target.result });
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            } else {
+                setState({ imageSrc: '' });
+            }
+        });
+
+        formNode['mf-grid-size'].addEventListener('input', function(e) {
+            setState({ gridSize: e.target.valueAsNumber });
+        });
+
+        formNode['mf-colors'].addEventListener('input', function(e) {
+            setState({ colors: e.target.valueAsNumber });
+        });
+
+        formNode['mf-font'].addEventListener('input', function(e) {
+            setState({ font: e.target.value.trim() });
+        });
+
+        formNode['mf-vocabulary-presets'].addEventListener('change', function(e) {
+            setState({
+                vocabularyPreset: e.target.value,
+                vocabulary: e.target.value ?
+                    vocabularies[e.target.value] :
+                    ''
+            });
+        });
+
+        formNode['mf-vocabulary'].addEventListener('input', function(e) {
+            setState({ vocabulary: e.target.value.trim() });
+        });
+
+        formNode.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (formNode.checkValidity() && image.src && image.width && image.height) {
+                renderImage();
+            }
+        });
+
+        document.links['download-link'].addEventListener('click', function(e) {
+            e.target.href = canvasNode.toDataURL();
+            e.target.download = 'wordy-image.png';
+        });
+
+        image.onload = function() {
+            image.onload = undefined;
+            renderImage();
+        };
+
+        setState({
+            imageSrc: 'IMG_3660.JPG',
+            colors: 5,
+            gridSize: 20,
+            font: 'Impact, sans-serif',
+            vocabularyPreset: 'js',
+            vocabulary: vocabularies['js']
+        });
+
+        function setState(data) {
+            var oldState = {};
+            Object.keys(data).forEach(function(key) {
+                if (state[key] !== data[key]) {
+                    oldState[key] = state[key];
+                    state[key] = data[key];
+                }
+            });
+            if (Object.keys(oldState).length) {
+                render(oldState);
+            }
+        }
+
+        function render(oldState) {
+            if ('imageSrc' in oldState) {
+                formNode['mf-submit'].disabled = true;
+                image.src = state.imageSrc;
+            }
+
+            if ('gridSize' in oldState) {
+                formNode['mf-grid-size'].value = state.gridSize;
+                formNode['mf-grid-size-output'].value = state.gridSize;
+            }
+
+            if ('colors' in oldState) {
+                formNode['mf-colors'].value = state.colors;
+                formNode['mf-colors-output'].value = state.colors;
+            }
+
+            if ('vocabularyPreset' in oldState) {
+                formNode['mf-vocabulary-presets'].value = state.vocabularyPreset;
+            }
+
+            if ('vocabulary' in oldState) {
+                formNode['mf-vocabulary'].value = state.vocabulary;
+            }
+        }
+    })();
+
+
+    function renderImage() {
         var size = {};
         if (window.innerWidth / window.innerHeight > image.width / image.height) {
             size.height = window.innerHeight;
             size.width = Math.floor(window.innerHeight / image.height * image.width)
         } else {
             size.width = window.innerWidth;
-            size.heigth = Math.floor(window.innerWidth / image.width * image.height)
+            size.height = Math.floor(window.innerWidth / image.width * image.height)
         }
 
         var sourceCanvasSize = {
-            width: Math.round(size.width / gridSize),
-            height: Math.round(size.height / gridSize)
+            width: Math.round(size.width / state.gridSize),
+            height: Math.round(size.height / state.gridSize)
         };
-        var sourceContext = createCanvasContext(sourceCanvasSize, false);
-        var filterContext = createCanvasContext(size, true);
+        var sourceContext = createCanvasContext(sourceCanvasSize);
+        var filterContext = createCanvasContext(size, canvasNode);
 
         // put image to canvas
         sourceContext.drawImage(image, 0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
         var sourceImageData = sourceContext.getImageData(0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
         // format vocabulary
-        var words = window.vocabulary.trim().split('\n')
+        var words = state.vocabulary.trim().split(' ')
             .map(function(word) {
                 return {
                     ratio: filterContext.measureText(word).width / 10,
@@ -130,15 +249,15 @@
                 }
                 var selectedRectIndex = Math.floor(Math.random() * maxValidRatioValueIndex);
                 var selectedRect = {
-                    top: minRatioDeltas[selectedRectIndex].rect.pos[0][0] * gridSize,
-                    right: minRatioDeltas[selectedRectIndex].rect.pos[1][1] * gridSize + gridSize,
-                    bottom: minRatioDeltas[selectedRectIndex].rect.pos[1][0] * gridSize + gridSize,
-                    left: minRatioDeltas[selectedRectIndex].rect.pos[0][1] * gridSize
+                    top: minRatioDeltas[selectedRectIndex].rect.pos[0][0] * state.gridSize,
+                    right: minRatioDeltas[selectedRectIndex].rect.pos[1][1] * state.gridSize + state.gridSize,
+                    bottom: minRatioDeltas[selectedRectIndex].rect.pos[1][0] * state.gridSize + state.gridSize,
+                    left: minRatioDeltas[selectedRectIndex].rect.pos[0][1] * state.gridSize
                 };
                 // place word
                 filterContext.fillStyle = 'rgb(' + new Array(3).fill(minRatioDeltas[selectedRectIndex].rect.color).join() + ')';
                 if (minRatioDeltas[selectedRectIndex].orient === 'h') {
-                    filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + FONT_FAMILY;
+                    filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
                     filterContext.fillText(
                         minRatioDeltas[selectedRectIndex].word.word,
                         (selectedRect.right - selectedRect.left) / 2 + selectedRect.left,
@@ -148,7 +267,7 @@
                     filterContext.save();
                     filterContext.translate(selectedRect.right, selectedRect.top);
                     filterContext.rotate(Math.PI / 2);
-                    filterContext.font = (selectedRect.right - selectedRect.left) + 'px ' + FONT_FAMILY;
+                    filterContext.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
                     filterContext.fillText(
                         minRatioDeltas[selectedRectIndex].word.word,
                         (selectedRect.bottom - selectedRect.top) / 2,
@@ -178,16 +297,13 @@
     /**
      * Returns context of created canvas
      * @param {Object} size
-     * @param {boolean} appendToDOM
+     * @param {HTMLElement} canvasNode
      * @returns {CanvasRenderingContext2D}
      */
-    function createCanvasContext(size, appendToDOM) {
-        var canvasNode = document.createElement('canvas');
+    function createCanvasContext(size, canvasNode) {
+        canvasNode = canvasNode || document.createElement('canvas');
         canvasNode.width = size.width;
         canvasNode.height = size.height;
-        if (appendToDOM) {
-            document.body.appendChild(canvasNode);
-        }
         return canvasNode.getContext('2d');
     }
 
@@ -206,24 +322,12 @@
      * @returns {number}
      */
     function thresholdLightness(lightness) {
-        for (var i = 0, level = 0; i <= COLOR_LEVELS_NUM; i++, level += colorThresholdWindow) {
+        var colorThresholdWindow = 255 / (state.colors + 1);
+        for (var i = 0, level = 0; i <= state.colors; i++, level += colorThresholdWindow) {
             if (lightness < level + colorThresholdWindow / 2) {
                 return Math.floor(level);
             }
         }
         return 255;
-    }
-
-    /**
-     * Returns mean lightness value for given pixels
-     * @param {Array} pixels
-     * @param {Object} imageData
-     * @returns {number}
-     */
-    function getMeanLightness(pixels, imageData) {
-        var meanLightness = pixels.reduce(function(sum, pixelIndex) {
-            return sum + imageData[pixelIndex];
-        }, 0) / pixels.length;
-        return thresholdLightness(meanLightness);
     }
 })();
