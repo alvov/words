@@ -3,19 +3,15 @@
 
     var RATIO_THRESHOLD = 0.17;
 
-    var vocabularies = {
-        js: vocabulary
-    };
-
     var image = new Image();
     var canvasNode = document.getElementById('canvas');
 
     var state = {
+        preset: null,
         imageSrc: null,
         colors: null,
         gridSize: null,
         font: null,
-        vocabularyPreset: null,
         vocabulary: null,
         downloadLink: null
     };
@@ -26,6 +22,17 @@
 
         image.addEventListener('load', function() {
             formNode['mf-submit'].disabled = false;
+        });
+
+        window.examples.forEach(function(example, i) {
+            var optionNode = document.createElement('option');
+            optionNode.value = i;
+            optionNode.innerText = example.preset;
+            formNode['mf-preset'].appendChild(optionNode);
+        });
+
+        formNode['mf-preset'].addEventListener('change', function(e) {
+            setState(window.examples[e.target.valueAsNumber]);
         });
 
         formNode['mf-image-input'].addEventListener('change', function(e) {
@@ -52,15 +59,6 @@
             setState({ font: e.target.value.trim() });
         });
 
-        formNode['mf-vocabulary-presets'].addEventListener('change', function(e) {
-            setState({
-                vocabularyPreset: e.target.value,
-                vocabulary: e.target.value ?
-                    vocabularies[e.target.value] :
-                    ''
-            });
-        });
-
         formNode['mf-vocabulary'].addEventListener('input', function(e) {
             setState({ vocabulary: e.target.value.trim() });
         });
@@ -82,15 +80,12 @@
             renderImage();
         };
 
-        setState({
-            imageSrc: 'IMG_3660.JPG',
-            colors: 7,
-            gridSize: 20,
-            font: 'Impact, sans-serif',
-            vocabularyPreset: 'js',
-            vocabulary: vocabularies['js']
-        });
+        setState(window.examples[0]);
 
+        /**
+         * Updates the state object and triggers rendering
+         * @param {Object} data
+         */
         function setState(data) {
             var oldState = {};
             Object.keys(data).forEach(function(key) {
@@ -104,7 +99,17 @@
             }
         }
 
+        /**
+         * Updates DOM depending on changed state
+         * @param {Object} oldState
+         */
         function render(oldState) {
+            if ('preset' in oldState) {
+                formNode['mf-preset'].value = window.examples.findIndex(function(example) {
+                    return example.preset === state.preset;
+                });
+            }
+
             if ('imageSrc' in oldState) {
                 formNode['mf-submit'].disabled = true;
                 image.src = state.imageSrc;
@@ -124,17 +129,15 @@
                 formNode['mf-font'].value = state.font;
             }
 
-            if ('vocabularyPreset' in oldState) {
-                formNode['mf-vocabulary-presets'].value = state.vocabularyPreset;
-            }
-
             if ('vocabulary' in oldState) {
                 formNode['mf-vocabulary'].value = state.vocabulary;
             }
         }
     })();
 
-
+    /**
+     * Renders text-image on canvas
+     */
     function renderImage() {
         var size = {};
         if (window.innerWidth / window.innerHeight > image.width / image.height) {

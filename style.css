@@ -35,7 +35,7 @@ canvas {
     }
     .form-expand-input:checked + .form {
         width: 220px;
-        height: 276px;
+        height: 312px;
         border-radius: 2px;
         transition: width .4s, height .4s .4s, border-radius .4s .4s;
     }
@@ -43,10 +43,6 @@ canvas {
     .form-row {
         margin: 5px 10px 9px;
     }
-
-        .form-row_vocabulary {
-            text-align: left;
-        }
 
         .form-row_submit {
             text-align: right;

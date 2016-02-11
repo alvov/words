@@ -11,8 +11,12 @@
     <form id="mf-controls" class="form">
         <label for="mf-expanded" class="form-label form-label_expand"></label>
         <div class="form-row">
+            <label for="mf-preset" class="form-label">Example preset</label>
+            <select id="mf-preset"></select>
+        </div>
+        <div class="form-row">
             <label for="mf-image-input" class="form-label">Source image</label>
-            <input type="file" id="mf-image-input" required/>
+            <input type="file" id="mf-image-input"/>
         </div>
         <div class="form-row">
             <label for="mf-grid-size" class="form-label">Grid size</label>
@@ -28,11 +32,7 @@
             <label for="mf-font" class="form-label">Font</label>
             <input type="text" id="mf-font" required/>
         </div>
-        <div class="form-row form-row_vocabulary">
-            <select id="mf-vocabulary-presets" class="form-vocabulary-list">
-                <option value="">- Custom -</option>
-                <option value="js">JS</option>
-            </select>
+        <div class="form-row">
             <label for="mf-vocabulary" class="form-label">Vocabulary</label>
             <textarea id="mf-vocabulary" required title="Enter space-separated words"></textarea>
         </div>
@@ -41,7 +41,7 @@
             <input type="submit" id="mf-submit" value="Apply">
         </div>
     </form>
-    <script src="vocabulary.js"></script>
+    <script src="examples/me/example.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
