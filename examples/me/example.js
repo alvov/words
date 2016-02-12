@@ -2,7 +2,8 @@ var examples = examples || [];
 
 examples.push({
     preset: 'me',
-    imageSrc: 'examples/me/example.jpg',
+    imageName: 'me.jpg',
+    imageSrc: 'examples/me/me.jpg',
     colors: 7,
     gridSize: 20,
     font: 'Impact, sans-serif',

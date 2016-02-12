@@ -3,6 +3,7 @@
 
     var RATIO_THRESHOLD = 0.17;
     var DEFAULT_SQUARE_WORD = '??';
+    var CHOOSE_IMAGE = 'choose image';
 
     var image = new Image();
     var canvasNode = document.getElementById('canvas');
@@ -10,6 +11,7 @@
     var state = {
         preset: null,
         imageSrc: null,
+        imageName: null,
         colors: null,
         gridSize: null,
         font: null,
@@ -21,10 +23,6 @@
     (function() {
         var formNode = document.forms['mf-controls'];
 
-        image.addEventListener('load', function() {
-            formNode['mf-submit'].disabled = false;
-        });
-
         window.examples.forEach(function(example, i) {
             var optionNode = document.createElement('option');
             optionNode.value = i;
@@ -33,35 +31,36 @@
         });
 
         formNode['mf-preset'].addEventListener('change', function(e) {
-            setState(window.examples[e.target.valueAsNumber]);
+            setPreset(Number(e.target.value));
         });
 
         formNode['mf-image-input'].addEventListener('change', function(e) {
-            if (/jpg|jpeg|png|gif/i.test(e.target.value.split('.').pop())) {
+            if (/image/.test(e.target.files[0].type)) {
                 var reader = new FileReader();
+                var fileName = e.target.files[0].name;
                 reader.onload = function(e) {
-                    setState({ imageSrc: e.target.result });
+                    setState({ imageSrc: e.target.result, imageName: fileName, preset: '' });
                 };
                 reader.readAsDataURL(e.target.files[0]);
             } else {
-                setState({ imageSrc: '' });
+                setState({ imageSrc: '', imageName: CHOOSE_IMAGE, preset: '' });
             }
         });
 
         formNode['mf-grid-size'].addEventListener('input', function(e) {
-            setState({ gridSize: e.target.valueAsNumber });
+            setState({ gridSize: e.target.valueAsNumber, preset: '' });
         });
 
         formNode['mf-colors'].addEventListener('input', function(e) {
-            setState({ colors: e.target.valueAsNumber });
+            setState({ colors: e.target.valueAsNumber, preset: '' });
         });
 
         formNode['mf-font'].addEventListener('input', function(e) {
-            setState({ font: e.target.value.trim() });
+            setState({ font: e.target.value.trim(), preset: '' });
         });
 
         formNode['mf-vocabulary'].addEventListener('input', function(e) {
-            setState({ vocabulary: e.target.value.trim() });
+            setState({ vocabulary: e.target.value.trim(), preset: '' });
         });
 
         formNode.addEventListener('submit', function(e) {
@@ -76,12 +75,7 @@
             e.target.download = 'wordy-image.png';
         });
 
-        image.onload = function() {
-            image.onload = undefined;
-            renderImage();
-        };
-
-        setState(window.examples[0]);
+        setPreset(0);
 
         /**
          * Updates the state object and triggers rendering
@@ -111,8 +105,11 @@
                 });
             }
 
+            if ('imageName' in oldState) {
+                formNode['mf-image-input'].labels[0].innerText = state.imageName;
+            }
+
             if ('imageSrc' in oldState) {
-                formNode['mf-submit'].disabled = true;
                 image.src = state.imageSrc;
             }
 
@@ -127,12 +124,27 @@
             }
 
             if ('font' in oldState) {
-                formNode['mf-font'].value = state.font;
+                if (formNode['mf-font'].value !== state.font) {
+                    formNode['mf-font'].value = state.font;
+                }
             }
 
             if ('vocabulary' in oldState) {
                 formNode['mf-vocabulary'].value = state.vocabulary;
             }
+        }
+
+        /**
+         * Sets preset state value and triggers image rendering
+         * @param {number} index
+         */
+        function setPreset(index) {
+            setState(window.examples[index]);
+            var image = new Image();
+            image.onload = function() {
+                renderImage();
+            };
+            image.src = window.examples[index].imageSrc;
         }
     })();
 

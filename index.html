@@ -12,10 +12,13 @@
         <label for="mf-expanded" class="form-label form-label_expand"></label>
         <div class="form-row">
             <label for="mf-preset" class="form-label">Example preset</label>
-            <select id="mf-preset"></select>
+            <select id="mf-preset">
+                <option value="-1">-</option>
+            </select>
         </div>
         <div class="form-row">
-            <label for="mf-image-input" class="form-label">Source image</label>
+            <label class="form-label">Source image</label>
+            <label for="mf-image-input" class="form-custom-file">Choose file</label>
             <input type="file" id="mf-image-input"/>
         </div>
         <div class="form-row">
@@ -42,6 +45,8 @@
         </div>
     </form>
     <script src="examples/me/example.js"></script>
+    <script src="examples/snoop-dogg/example.js"></script>
+    <script src="examples/darth-vader/example.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

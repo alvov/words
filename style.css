@@ -29,10 +29,6 @@ canvas {
     opacity: .97;
     text-align: center;
 }
-    .form-expand-input {
-        position: absolute;
-        left: -9000px;
-    }
     .form-expand-input:checked + .form {
         width: 220px;
         height: 312px;
@@ -47,6 +43,18 @@ canvas {
         .form-row_submit {
             text-align: right;
         }
+
+    .form-expand-input,
+    input[type="file"] {
+        position: absolute;
+        left: -9000px;
+    }
+    .form-custom-file {
+        padding: 2px 4px;
+        border: 1px solid #eee;
+        border-radius: 2px;
+        cursor: pointer;
+    }
 
     .form-label {
         display: block;
@@ -86,6 +94,11 @@ canvas {
     .form output {
         margin: 0;
         vertical-align: middle;
+    }
+
+    .form output {
+        position: absolute;
+        margin: 0 0 0 5px;
     }
 
     .form-vocabulary-list {
