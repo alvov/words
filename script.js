@@ -2,6 +2,7 @@
     'use strict';
 
     var RATIO_THRESHOLD = 0.17;
+    var DEFAULT_SQUARE_WORD = '??';
 
     var image = new Image();
     var canvasNode = document.getElementById('canvas');
@@ -165,9 +166,6 @@
                     ratio: filterContext.measureText(word).width / 10,
                     word: word
                 };
-            })
-            .sort(function(a, b) {
-                return a.ratio - b.ratio;
             });
         // greyscale, threshold, construct grid array
         var gridCells = [];
@@ -190,6 +188,7 @@
         filterContext.textBaseline = 'middle';
 
         var excludedCells = {};
+        var wordsTimesUsed = {};
         for (gridRow = 0; gridRow < gridCells.length; gridRow++) {
             for (gridCol = 0; gridCol < gridCells[gridRow].length; gridCol++) {
                 if (excludedCells[gridRow + '_' + gridCol] || gridCells[gridRow][gridCol].color === 255) {
@@ -215,6 +214,7 @@
                             pos: [[gridRow, gridCol], [bottomNeighbourIndex, rightNeighbourIndex]],
                             color: currentCell.color
                         };
+                        newRect.square = (rightNeighbourIndex - gridCol + 1) * (bottomNeighbourIndex - gridRow + 1);
                         newRect.ratio = [(newRect.pos[1][1] + 1 - newRect.pos[0][1]) /
                             (newRect.pos[1][0] + 1 - newRect.pos[0][0])];
                         newRect.ratio[1] = 1 / newRect.ratio[0];
@@ -224,49 +224,82 @@
                     maxRow = bottomNeighbourIndex;
                     rightNeighbourIndex++;
                 }
-                // choose rectangle
-                var minRatioDeltas = [];
+                var candidates = [];
                 for (i = 0; i < currentCellRectangles.length; i++) {
-                    var minRatioDelta = {
-                        value: Infinity
-                    };
                     for (var j = 0; j < words.length; j++) {
                         for (var k = 0; k < 2; k++) {
                             var ratioDelta = Math.abs(words[j].ratio - currentCellRectangles[i].ratio[k]);
-                            if (minRatioDelta.value > ratioDelta) {
-                                minRatioDelta.value = ratioDelta;
-                                minRatioDelta.rect = currentCellRectangles[i];
-                                minRatioDelta.word = words[j];
-                                minRatioDelta.orient = k ? 'v' : 'h';
+                            if (ratioDelta <= RATIO_THRESHOLD) {
+                                candidates.push(Object.assign({}, currentCellRectangles[i], {
+                                    ratioDelta: ratioDelta,
+                                    word: words[j].word,
+                                    wordFreq: wordsTimesUsed[words[j].word] || 0,
+                                    orient: k ? 'v' : 'h',
+                                    ranks: []
+                                }));
                             }
                         }
                     }
-                    minRatioDeltas.push(minRatioDelta);
                 }
-                minRatioDeltas = minRatioDeltas.sort(function(a, b) {
-                    return a.value - b.value;
-                });
-                var maxValidRatioValueIndex = minRatioDeltas.findIndex(function(ratioDelta) {
-                    if (ratioDelta.value > RATIO_THRESHOLD) {
-                        return true;
+                if (!candidates.length) {
+                    candidates.push(Object.assign({}, currentCellRectangles[0], {
+                        ratioDelta: 1,
+                        word: DEFAULT_SQUARE_WORD,
+                        wordFreq: wordsTimesUsed[DEFAULT_SQUARE_WORD] || 0,
+                        orient: 'h',
+                        ranks: []
+                    }));
+                }
+
+                // choose rectangle
+                candidates = sortByProp(candidates, 'ratioDelta');
+                // ratioDelta rank
+                setRanks(candidates, 'ratioDelta', 0);
+                // square rank
+                candidates = sortByProp(candidates, 'square', -1);
+                setRanks(candidates, 'square', 1);
+                // frequency rank
+                candidates = sortByProp(candidates, 'wordFreq');
+                setRanks(candidates, 'wordFreq', 2);
+                for (i = 0; i < candidates.length; i++) {
+                    candidates[i].ranks = candidates[i].ranks[0] +
+                        candidates[i].ranks[1] + candidates[i].ranks[2];
+                }
+                candidates = sortByProp(candidates, 'ranks');
+
+                var sameRankIndexLimit = candidates.findIndex(function(candidate, i, arr) {
+                    if (candidate.ranks !== arr[0].ranks) {
+                        return candidate;
                     }
                 });
-                if (maxValidRatioValueIndex === -1) {
-                    maxValidRatioValueIndex = minRatioDeltas.length;
+                var selectedRectIndex;
+                if (Math.abs(sameRankIndexLimit) === 1) {
+                    selectedRectIndex = 0;
+                } else {
+                    selectedRectIndex = Math.floor(Math.random() * sameRankIndexLimit);
                 }
-                var selectedRectIndex = Math.floor(Math.random() * maxValidRatioValueIndex);
                 var selectedRect = {
-                    top: minRatioDeltas[selectedRectIndex].rect.pos[0][0] * state.gridSize,
-                    right: minRatioDeltas[selectedRectIndex].rect.pos[1][1] * state.gridSize + state.gridSize,
-                    bottom: minRatioDeltas[selectedRectIndex].rect.pos[1][0] * state.gridSize + state.gridSize,
-                    left: minRatioDeltas[selectedRectIndex].rect.pos[0][1] * state.gridSize
+                    top: candidates[selectedRectIndex].pos[0][0] * state.gridSize,
+                    right: candidates[selectedRectIndex].pos[1][1] * state.gridSize + state.gridSize,
+                    bottom: candidates[selectedRectIndex].pos[1][0] * state.gridSize + state.gridSize,
+                    left: candidates[selectedRectIndex].pos[0][1] * state.gridSize
                 };
+                if (wordsTimesUsed[candidates[selectedRectIndex].word]) {
+                    wordsTimesUsed[candidates[selectedRectIndex].word]++;
+                } else {
+                    wordsTimesUsed[candidates[selectedRectIndex].word] = 1;
+                }
+
                 // place word
-                filterContext.fillStyle = 'rgb(' + new Array(3).fill(minRatioDeltas[selectedRectIndex].rect.color).join() + ')';
-                if (minRatioDeltas[selectedRectIndex].orient === 'h') {
+                filterContext.fillStyle = 'rgb(' +
+                    candidates[selectedRectIndex].color + ',' +
+                    candidates[selectedRectIndex].color + ',' +
+                    candidates[selectedRectIndex].color +
+                ')';
+                if (candidates[selectedRectIndex].orient === 'h') {
                     filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
                     filterContext.fillText(
-                        minRatioDeltas[selectedRectIndex].word.word,
+                        candidates[selectedRectIndex].word,
                         (selectedRect.right - selectedRect.left) / 2 + selectedRect.left,
                         (selectedRect.bottom - selectedRect.top) / 2 + selectedRect.top
                     );
@@ -276,7 +309,7 @@
                     filterContext.rotate(Math.PI / 2);
                     filterContext.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
                     filterContext.fillText(
-                        minRatioDeltas[selectedRectIndex].word.word,
+                        candidates[selectedRectIndex].word,
                         (selectedRect.bottom - selectedRect.top) / 2,
                         (selectedRect.right - selectedRect.left) / 2
                     );
@@ -285,13 +318,13 @@
 
                 // exclude grid cells
                 for (
-                    var selectedRectRow = minRatioDeltas[selectedRectIndex].rect.pos[0][0];
-                    selectedRectRow <= minRatioDeltas[selectedRectIndex].rect.pos[1][0];
+                    var selectedRectRow = candidates[selectedRectIndex].pos[0][0];
+                    selectedRectRow <= candidates[selectedRectIndex].pos[1][0];
                     selectedRectRow++
                 ) {
                     for (
-                        var selectedRectCol = minRatioDeltas[selectedRectIndex].rect.pos[0][1];
-                        selectedRectCol <= minRatioDeltas[selectedRectIndex].rect.pos[1][1];
+                        var selectedRectCol = candidates[selectedRectIndex].pos[0][1];
+                        selectedRectCol <= candidates[selectedRectIndex].pos[1][1];
                         selectedRectCol++
                     ) {
                         excludedCells[selectedRectRow + '_' + selectedRectCol] = true;
@@ -336,5 +369,39 @@
             }
         }
         return 255;
+    }
+
+    /**
+     * Sets the rank depending on given key. Ranks are not unique
+     * @param {Array} arr
+     * @param {string} key
+     * @param {number} rankIndex
+     */
+    function setRanks(arr, key, rankIndex) {
+        for (var i = 0; i < arr.length; i++) {
+            if (i) {
+                if (arr[i][key] === arr[i - 1][key]) {
+                    arr[i].ranks[rankIndex] = arr[i - 1].ranks[rankIndex];
+                } else {
+                    arr[i].ranks[rankIndex] = arr[i - 1].ranks[rankIndex] + 1;
+                }
+            } else {
+                arr[i].ranks[rankIndex] = 0;
+            }
+        }
+    }
+
+    /**
+     * Sorts array by given property key
+     * @param {Array} arr
+     * @param {string} key
+     * @param {number} order
+     * @returns {Array}
+     */
+    function sortByProp(arr, key, order) {
+        order = order || 1;
+        return arr.sort(function(a, b) {
+            return order * (a[key] - b[key]);
+        });
     }
 })();
