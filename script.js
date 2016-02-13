@@ -274,8 +274,8 @@
                 candidates = sortByProp(candidates, 'wordFreq');
                 setRanks(candidates, 'wordFreq', 2);
                 for (i = 0; i < candidates.length; i++) {
-                    candidates[i].ranks = candidates[i].ranks[0] +
-                        candidates[i].ranks[1] + candidates[i].ranks[2];
+                    candidates[i].ranks = 0.2 * candidates[i].ranks[0] +
+                        0.4 * candidates[i].ranks[1] + 0.4 * candidates[i].ranks[2];
                 }
                 candidates = sortByProp(candidates, 'ranks');
 

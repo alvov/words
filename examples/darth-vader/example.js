@@ -7,6 +7,6 @@ examples.push({
     colors: 5,
     gridSize: 20,
     font: 'Impact, sans-serif',
-    vocabulary: 'dark side force empire march father luke anakin skywalker c3 po lightsaber deathstar star wars ' +
+    vocabulary: 'dark side force empire march father son luke anakin skywalker c3 po lightsaber deathstar star wars ' +
         'sith lord padme fear anger hate destroyer mask obey master darth vader'
 });
