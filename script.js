@@ -9,6 +9,7 @@
     var canvasNode = document.getElementById('canvas');
 
     var state = {
+        isLoading: null,
         preset: null,
         imageSrc: null,
         imageName: null,
@@ -66,7 +67,9 @@
         formNode.addEventListener('submit', function(e) {
             e.preventDefault();
             if (formNode.checkValidity() && image.src && image.width && image.height) {
+                setState({ isLoading: true });
                 renderImage();
+                setState({ isLoading: false });
             }
         });
 
@@ -132,6 +135,10 @@
             if ('vocabulary' in oldState) {
                 formNode['mf-vocabulary'].value = state.vocabulary;
             }
+
+            if ('isLoading' in oldState) {
+                formNode.classList.toggle('is-loading', Boolean(state.isLoading));
+            }
         }
 
         /**
@@ -139,10 +146,13 @@
          * @param {number} index
          */
         function setPreset(index) {
-            setState(window.examples[index]);
+            setState(Object.assign({}, window.examples[index], {
+                isLoading: true
+            }));
             var image = new Image();
             image.onload = function() {
                 renderImage();
+                setState({ isLoading: false });
             };
             image.src = window.examples[index].imageSrc;
         }

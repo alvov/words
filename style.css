@@ -28,6 +28,15 @@ canvas {
     .form-expand-input:checked + .form {
         transform: translate(0, 0);
     }
+    .form.is-loading::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(255, 255, 255, .6);
+    }
 
     .form-row {
         margin: 5px 10px 9px;
