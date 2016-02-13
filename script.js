@@ -203,7 +203,7 @@
         var wordsTimesUsed = {};
         for (gridRow = 0; gridRow < gridCells.length; gridRow++) {
             for (gridCol = 0; gridCol < gridCells[gridRow].length; gridCol++) {
-                if (excludedCells[gridRow + '_' + gridCol] || gridCells[gridRow][gridCol].color === 255) {
+                if (excludedCells[gridRow + '_' + gridCol] || gridCells[gridRow][gridCol].color === 100) {
                     continue;
                 }
                 var currentCell = gridCells[gridRow][gridCol];
@@ -303,11 +303,7 @@
                 }
 
                 // place word
-                filterContext.fillStyle = 'rgb(' +
-                    candidates[selectedRectIndex].color + ',' +
-                    candidates[selectedRectIndex].color + ',' +
-                    candidates[selectedRectIndex].color +
-                ')';
+                filterContext.fillStyle = 'hsl(0, 0%, ' + candidates[selectedRectIndex].color + '%)';
                 if (candidates[selectedRectIndex].orient === 'h') {
                     filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
                     filterContext.fillText(
@@ -360,11 +356,11 @@
     }
 
     /**
-     * Returns pixel lightness value
+     * Returns pixel lightness value (0 - 100)
      * @param {Array} rgb
      */
     function greyScale(rgb) {
-        var lightness = Math.floor((rgb[0] + rgb[1] + rgb[2]) / 3);
+        var lightness = Math.floor((rgb[0] + rgb[1] + rgb[2]) / 3) * 100 / 255;
         return thresholdLightness(lightness);
     }
 
@@ -374,13 +370,13 @@
      * @returns {number}
      */
     function thresholdLightness(lightness) {
-        var colorThresholdWindow = 255 / (state.colors - 1);
+        var colorThresholdWindow = 100 / (state.colors - 1);
         for (var i = 0, level = 0; i < state.colors; i++, level += colorThresholdWindow) {
             if (lightness < level + colorThresholdWindow / 2) {
                 return Math.floor(level);
             }
         }
-        return 255;
+        return 100;
     }
 
     /**

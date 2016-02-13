@@ -8,5 +8,5 @@ examples.push({
     gridSize: 20,
     font: 'Impact, sans-serif',
     vocabulary: 'gang hood yo snoop dogg ride business big boss style streets roll playa drizzle nizzle shizzle peace ' +
-        'bitch real respect shit muthafucker pimp dude hot double-g y\'all gangsta'
+        'bitch real respect shit muthafucker pimp dude hot double-g y\'all gangsta rap hip-hop beat records r&g'
 });
