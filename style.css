@@ -103,6 +103,13 @@ canvas {
         margin: 0 0 0 5px;
     }
 
+        .form .form-color-output {
+            width: 8px;
+            height: 8px;
+            margin-top: 3px;
+            border: 1px solid #999;
+        }
+
     .form-vocabulary-list {
         float: right;
         margin: 0 0 1px;

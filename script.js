@@ -13,7 +13,8 @@
         preset: null,
         imageSrc: null,
         imageName: null,
-        colors: null,
+        color: null,
+        shades: null,
         gridSize: null,
         font: null,
         vocabulary: null,
@@ -52,8 +53,12 @@
             setState({ gridSize: e.target.valueAsNumber, preset: '' });
         });
 
-        formNode['mf-colors'].addEventListener('input', function(e) {
-            setState({ colors: e.target.valueAsNumber, preset: '' });
+        formNode['mf-color'].addEventListener('input', function(e) {
+            setState({ color: e.target.valueAsNumber, preset: '' });
+        });
+
+        formNode['mf-shades'].addEventListener('input', function(e) {
+            setState({ shades: e.target.valueAsNumber, preset: '' });
         });
 
         formNode['mf-font'].addEventListener('input', function(e) {
@@ -121,9 +126,14 @@
                 formNode['mf-grid-size-output'].value = state.gridSize;
             }
 
-            if ('colors' in oldState) {
-                formNode['mf-colors'].value = state.colors;
-                formNode['mf-colors-output'].value = state.colors;
+            if ('color' in oldState) {
+                formNode['mf-color'].value = state.color;
+                formNode['mf-color-output'].style.backgroundColor = getColorByParams(state.color);
+            }
+
+            if ('shades' in oldState) {
+                formNode['mf-shades'].value = state.shades;
+                formNode['mf-shades-output'].value = state.shades;
             }
 
             if ('font' in oldState) {
@@ -313,7 +323,7 @@
                 }
 
                 // place word
-                filterContext.fillStyle = 'hsl(0, 0%, ' + candidates[selectedRectIndex].color + '%)';
+                filterContext.fillStyle = getColorByParams(state.color, candidates[selectedRectIndex].color);
                 if (candidates[selectedRectIndex].orient === 'h') {
                     filterContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
                     filterContext.fillText(
@@ -380,8 +390,8 @@
      * @returns {number}
      */
     function thresholdLightness(lightness) {
-        var colorThresholdWindow = 100 / (state.colors - 1);
-        for (var i = 0, level = 0; i < state.colors; i++, level += colorThresholdWindow) {
+        var colorThresholdWindow = 100 / (state.shades - 1);
+        for (var i = 0, level = 0; i < state.shades - 1; i++, level += colorThresholdWindow) {
             if (lightness < level + colorThresholdWindow / 2) {
                 return Math.floor(level);
             }
@@ -421,5 +431,29 @@
         return arr.sort(function(a, b) {
             return order * (a[key] - b[key]);
         });
+    }
+
+    /**
+     * Returns css color string for given hue and lightness
+     * @param {number} h
+     * @param {number} l
+     * @returns {string}
+     */
+    function getColorByParams(h, l) {
+        var s;
+        if (l === undefined) {
+            l = 0;
+        }
+        if (h === -1) {
+            // grayscale
+            s = 0;
+            h = 0;
+        } else {
+            // full saturation
+            s = 100;
+            // adjust lightness not to have dark colors (min l is 50)
+            l = Math.floor(l / 2) + 50;
+        }
+        return 'hsl(' + h + ', ' + s + '%, ' + l + '%)';
     }
 })();

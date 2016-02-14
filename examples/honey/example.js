@@ -4,7 +4,8 @@ examples.push({
     preset: 'honey',
     imageName: 'honey.jpg',
     imageSrc: 'examples/honey/honey.png',
-    colors: 8,
+    color: 300,
+    shades: 8,
     gridSize: 15,
     font: 'Impact, sans-serif',
     vocabulary: 'pulpiks xena beauty beautiful love kiss cuddle flower kitty princess girl lady sunshine ♥ honey ' +

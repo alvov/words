@@ -4,7 +4,8 @@ examples.push({
     preset: 'me',
     imageName: 'me.jpg',
     imageSrc: 'examples/me/me.jpg',
-    colors: 7,
+    color: -1,
+    shades: 7,
     gridSize: 20,
     font: 'Impact, sans-serif',
     vocabulary: '&& => js javascript prototype object break delete if this while case do in throw with catch else ' +
