@@ -6,6 +6,7 @@ examples.push({
     imageSrc: 'examples/me/me.jpg',
     color: -1,
     shades: 7,
+    bgColor: 360,
     gridSize: 20,
     font: 'Impact, sans-serif',
     vocabulary: '&& => js javascript prototype object break delete if this while case do in throw with catch else ' +

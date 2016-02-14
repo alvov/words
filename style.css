@@ -69,6 +69,7 @@ canvas {
             width: 30px;
             height: 30px;
             cursor: pointer;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, .5) 0, rgba(255, 255, 255, .5) 50%, rgba(255, 255, 255, 0) 50%);
             transform: translate(100%, 0);
             transition: transform .4s;
         }

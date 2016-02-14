@@ -12,6 +12,7 @@ The available controls for now are:
 * **grid size** - adjusts how detailed the resulting image will be
 * **color** - controls the hue of resulting image
 * **shades** - controls the quantity of color shades
+* **background color** - in case you'll feel creative
 * **font** - needs to be a valid css font-family value
 * **vocabulary** - space-separated words to be used in the result image. The more words of different lengths, the better.
 **Note:** as there will likely be a lot of small "square" areas on your image that must be filled with something,

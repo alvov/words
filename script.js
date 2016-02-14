@@ -15,6 +15,7 @@
         imageName: null,
         color: null,
         shades: null,
+        bgColor: null,
         gridSize: null,
         font: null,
         vocabulary: null,
@@ -59,6 +60,10 @@
 
         formNode['mf-shades'].addEventListener('input', function(e) {
             setState({ shades: e.target.valueAsNumber, preset: '' });
+        });
+
+        formNode['mf-bg-color'].addEventListener('input', function(e) {
+            setState({ bgColor: e.target.valueAsNumber, preset: '' });
         });
 
         formNode['mf-font'].addEventListener('input', function(e) {
@@ -136,6 +141,11 @@
                 formNode['mf-shades-output'].value = state.shades;
             }
 
+            if ('bgColor' in oldState) {
+                formNode['mf-bg-color'].value = state.bgColor;
+                formNode['mf-bg-color-output'].style.backgroundColor = getColorByParams(state.bgColor);
+            }
+
             if ('font' in oldState) {
                 if (formNode['mf-font'].value !== state.font) {
                     formNode['mf-font'].value = state.font;
@@ -187,6 +197,12 @@
         };
         var sourceContext = createCanvasContext(sourceCanvasSize);
         var filterContext = createCanvasContext(size, canvasNode);
+
+        // fill canvas background
+        var backgroundColorString = getColorByParams(state.bgColor);
+        filterContext.fillStyle = backgroundColorString;
+        filterContext.fillRect(0, 0, size.width, size.height);
+        document.body.style.backgroundColor = backgroundColorString;
 
         // put image to canvas
         sourceContext.drawImage(image, 0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
@@ -448,6 +464,9 @@
             // grayscale
             s = 0;
             h = 0;
+        } else if (h === 360) {
+            s = 100;
+            l = 100;
         } else {
             // full saturation
             s = 100;
