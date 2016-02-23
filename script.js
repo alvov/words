@@ -29,7 +29,7 @@
         window.examples.forEach(function(example, i) {
             var optionNode = document.createElement('option');
             optionNode.value = i;
-            optionNode.innerText = example.preset;
+            optionNode.textContent = example.preset;
             formNode['mf-preset'].appendChild(optionNode);
         });
 
@@ -119,7 +119,12 @@
             }
 
             if ('imageName' in oldState) {
-                formNode['mf-image-input'].labels[0].innerText = state.imageName;
+                if (formNode['mf-image-input'].labels) {
+                    formNode['mf-image-input'].labels[0].textContent = state.imageName;
+                } else {
+                    // firefox, wtf? ಠ_ಠ
+                    formNode.querySelector('[for="mf-image-input"]').textContent = state.imageName;
+                }
             }
 
             if ('imageSrc' in oldState) {

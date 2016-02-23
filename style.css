@@ -119,7 +119,7 @@ canvas {
 
     .form textarea {
         width: 100%;
-        height: 50px;
+        height: 100px;
         padding: 0;
         box-sizing: border-box;
         resize: none;
