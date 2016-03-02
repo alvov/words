@@ -51,12 +51,6 @@ canvas {
         position: absolute;
         left: -9000px;
     }
-    .form-custom-file {
-        padding: 2px 4px;
-        border: 1px solid #eee;
-        border-radius: 2px;
-        cursor: pointer;
-    }
 
     .form-label {
         display: block;
@@ -88,6 +82,13 @@ canvas {
                 transform: rotate(45deg) translate(0, 0);
             }
 
+        .form-label_custom-file {
+            padding: 2px 4px;
+            border: 1px solid #eee;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
     .form input[type=text],
     .form input[type=range] {
         width: 150px;
@@ -110,6 +111,14 @@ canvas {
             margin-top: 3px;
             border: 1px solid #999;
         }
+
+    .form-custom-file {
+        margin: 10px 0 0;
+    }
+    .form.video-on .form-custom-file,
+    .form.video-on .form-submit {
+        display: none;
+    }
 
     .form-vocabulary-list {
         float: right;

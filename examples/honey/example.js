@@ -2,7 +2,6 @@ var examples = examples || [];
 
 examples.push({
     preset: 'honey',
-    imageName: 'honey.jpg',
     imageSrc: 'examples/honey/honey.png',
     color: 334,
     shades: 8,

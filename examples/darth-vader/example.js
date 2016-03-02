@@ -2,7 +2,6 @@ var examples = examples || [];
 
 examples.push({
     preset: 'vader',
-    imageName: 'darth-vader.jpg',
     imageSrc: 'examples/darth-vader/darth-vader.jpg',
     color: -1,
     shades: 5,

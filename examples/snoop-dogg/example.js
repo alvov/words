@@ -2,7 +2,6 @@ var examples = examples || [];
 
 examples.push({
     preset: 'snoop',
-    imageName: 'snoop-dogg.jpg',
     imageSrc: 'examples/snoop-dogg/snoop-dogg.jpg',
     color: -1,
     shades: 7,

@@ -18,13 +18,16 @@
             </select>
         </div>
         <div class="form-row">
-            <label class="form-label">Source image</label>
-            <label for="mf-image-input" class="form-custom-file">Choose file</label>
-            <input type="file" id="mf-image-input"/>
+            <label for="mf-source" class="form-label">Source</label>
+            <select id="mf-source"></select>
+            <div class="form-custom-file">
+                <label for="mf-image-input" class="form-label_custom-file">Choose file</label>
+                <input type="file" id="mf-image-input"/>
+            </div>
         </div>
         <div class="form-row">
             <label for="mf-grid-size" class="form-label">Grid size</label>
-            <input type="range" id="mf-grid-size" name="gridsize" min="10" max="50" step="5" required/>
+            <input type="range" id="mf-grid-size" min="10" max="50" step="5" required/>
             <output for="mf-grid-size" id="mf-grid-size-output">20</output>
         </div>
         <div class="form-row">
@@ -52,9 +55,10 @@
         </div>
         <div class="form-row form-row_submit">
             <a href="#" id="download-link" download="word-image.png" class="form-link">Download image</a>
-            <input type="submit" id="mf-submit" value="Apply">
+            <input class="form-submit" type="submit" id="mf-submit" value="Apply">
         </div>
     </form>
+    <script src="node_modules/md-gum-polyfill/mediaDevices-getUserMedia-polyfill.js"></script>
     <script src="examples/me/example.js"></script>
     <script src="examples/honey/example.js"></script>
     <script src="examples/snoop-dogg/example.js"></script>

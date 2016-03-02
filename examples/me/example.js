@@ -2,7 +2,6 @@ var examples = examples || [];
 
 examples.push({
     preset: 'me',
-    imageName: 'me.jpg',
     imageSrc: 'examples/me/me.jpg',
     color: -1,
     shades: 7,
