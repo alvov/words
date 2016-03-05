@@ -21,10 +21,16 @@
 
     var imageNode = new Image();
     var videoNode;
-    var outputCanvasNode = document.getElementById('canvas');
-    var outputContext = outputCanvasNode.getContext('2d');
+    var outputCanvas = Object.create(helpers.outputCanvas);
+    outputCanvas.add(document.getElementById('canvas'), true);
+    outputCanvas.add(document.body.insertBefore(document.createElement('canvas'), outputCanvas.items[0].node), false);
+
     var sourceCanvasNode = document.createElement('canvas');
     var sourceContext = sourceCanvasNode.getContext('2d');
+    // single initiation for better GC
+    var sourceImageData;
+    // cached canvas size
+    var sourceCanvasSize;
     var words;
 
     var state = {
@@ -61,7 +67,10 @@
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             videoNode = document.createElement('video');
             videoNode.onloadedmetadata = function() {
-                setCanvasSize(videoNode);
+                setCanvasSize({
+                    width: videoNode.videoWidth,
+                    height: videoNode.videoHeight
+                });
                 videoCapturingLoop();
             };
             sourceOptions.push([VIDEO_MODE, 'video'])
@@ -132,7 +141,7 @@
         });
 
         document.links['download-link'].addEventListener('click', function(e) {
-            e.target.href = outputCanvasNode.toDataURL();
+            e.target.href = outputCanvas.visible.node.toDataURL();
             e.target.download = 'wordy-image.png';
         });
 
@@ -198,6 +207,12 @@
             if ('gridSize' in oldState) {
                 formNode['mf-grid-size'].value = state.gridSize;
                 formNode['mf-grid-size-output'].value = state.gridSize;
+                if (state.source === VIDEO_MODE) {
+                    setCanvasSize({
+                        width: videoNode.videoWidth,
+                        height: videoNode.videoHeight
+                    });
+                }
             }
 
             if ('color' in oldState) {
@@ -250,6 +265,9 @@
         }
     })();
 
+    /**
+     * Launches camera source rendering
+     */
     function videoCapturingLoop() {
         if (state.source !== VIDEO_MODE) {
             return;
@@ -265,33 +283,33 @@
     function renderImage(params) {
         // fill canvas background
         var backgroundColorString = getColorByParams(state.bgColor);
-        outputContext.fillStyle = backgroundColorString;
-        outputContext.fillRect(0, 0, outputCanvasNode.width, outputCanvasNode.height);
+        outputCanvas.hidden.ctx.fillStyle = backgroundColorString;
+        outputCanvas.hidden.ctx.fillRect(0, 0, outputCanvas.visible.node.width, outputCanvas.visible.node.height);
         document.body.style.backgroundColor = backgroundColorString;
 
+        outputCanvas.hidden.ctx.textAlign = 'center';
+        outputCanvas.hidden.ctx.textBaseline = 'middle';
+
         // put image to canvas
-        sourceContext.drawImage(params.src, 0, 0, sourceCanvasNode.width, sourceCanvasNode.height);
-        var sourceImageData = sourceContext.getImageData(0, 0, sourceCanvasNode.width, sourceCanvasNode.height);
+        sourceContext.drawImage(params.src, 0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
+        sourceImageData = sourceContext.getImageData(0, 0, sourceCanvasSize.width, sourceCanvasSize.height).data;
 
         // greyscale, threshold and construct grid array
         var gridCells = [];
-        for (var gridRow = 0; gridRow < sourceCanvasNode.height; gridRow++) {
+        for (var gridRow = 0; gridRow < sourceCanvasSize.height; gridRow++) {
             var gridRowCells = [];
-            for (var gridCol = 0; gridCol < sourceCanvasNode.width; gridCol++) {
-                var i = (gridRow * sourceCanvasNode.width + gridCol) * 4;
+            for (var gridCol = 0; gridCol < sourceCanvasSize.width; gridCol++) {
+                var i = (gridRow * sourceCanvasSize.width + gridCol) * 4;
                 gridRowCells.push({
                     color: greyScale([
-                        sourceImageData.data[i],
-                        sourceImageData.data[i + 1],
-                        sourceImageData.data[i + 2]
+                        sourceImageData[i],
+                        sourceImageData[i + 1],
+                        sourceImageData[i + 2]
                     ])
                 });
             }
             gridCells.push(gridRowCells);
         }
-
-        outputContext.textAlign = 'center';
-        outputContext.textBaseline = 'middle';
 
         var excludedCells = {};
         var wordsTimesUsed = {};
@@ -318,115 +336,146 @@
                         // add new rect
                         var newRect = {
                             pos: [[gridRow, gridCol], [bottomNeighbourIndex, rightNeighbourIndex]],
-                            color: currentCell.color
+                            color: currentCell.color,
+                            orient: 'h'
                         };
                         newRect.square = (rightNeighbourIndex - gridCol + 1) * (bottomNeighbourIndex - gridRow + 1);
-                        newRect.ratio = [(newRect.pos[1][1] + 1 - newRect.pos[0][1]) /
-                            (newRect.pos[1][0] + 1 - newRect.pos[0][0])];
-                        newRect.ratio[1] = 1 / newRect.ratio[0];
+                        newRect.ratio = (newRect.pos[1][1] + 1 - newRect.pos[0][1]) /
+                            (newRect.pos[1][0] + 1 - newRect.pos[0][0]);
                         currentCellRectangles.push(newRect);
+                        // add the same rectangle but "rotated"
+                        currentCellRectangles.push({
+                            pos: newRect.pos,
+                            color: newRect.color,
+                            orient: 'v',
+                            square: newRect.square,
+                            ratio: 1 / newRect.ratio
+                        });
                         bottomNeighbourIndex++;
                     }
                     maxRow = bottomNeighbourIndex;
                     rightNeighbourIndex++;
                 }
+
                 var candidates = [];
+                var nrm = Object.create(helpers.normalization);
+                nrm.reset('ratioDelta');
+                nrm.reset('square');
+                nrm.reset('wordFreq');
                 for (i = 0; i < currentCellRectangles.length; i++) {
+                    var prevRatioDelta = Infinity;
                     for (var j = 0; j < words.length; j++) {
-                        for (var k = 0; k < 2; k++) {
-                            var ratioDelta = Math.abs(words[j].ratio - currentCellRectangles[i].ratio[k]);
-                            if (ratioDelta <= RATIO_THRESHOLD) {
-                                candidates.push(Object.assign({}, currentCellRectangles[i], {
-                                    ratioDelta: ratioDelta,
-                                    word: words[j].word,
-                                    wordFreq: wordsTimesUsed[words[j].word] || 0,
-                                    orient: k ? 'v' : 'h',
-                                    ranks: []
-                                }));
-                            }
+                        var ratioDelta = Math.abs(words[j].ratio - currentCellRectangles[i].ratio);
+                        if (ratioDelta <= RATIO_THRESHOLD) {
+                            var currentWordFreq = wordsTimesUsed[words[j].word] || 0;
+                            candidates.push({
+                                pos: currentCellRectangles[i].pos,
+                                square: currentCellRectangles[i].square,
+                                color: currentCellRectangles[i].color,
+                                ratioDelta: ratioDelta,
+                                word: words[j].word,
+                                wordFreq: currentWordFreq,
+                                orient: currentCellRectangles[i].orient,
+                                ranks: []
+                            });
+                            nrm.push('ratioDelta', ratioDelta);
+                            nrm.push('square', currentCellRectangles[i].square);
+                            nrm.push('wordFreq', currentWordFreq);
+                        } else if (ratioDelta > prevRatioDelta) {
+                            // break if there's no more suitable word in the sorted list
+                            break;
                         }
+                        prevRatioDelta = ratioDelta;
                     }
                 }
                 if (!candidates.length) {
-                    candidates.push(Object.assign({}, currentCellRectangles[0], {
+                    candidates.push({
+                        pos: currentCellRectangles[0].pos,
+                        square: currentCellRectangles[0].square,
+                        color: currentCellRectangles[0].color,
                         ratioDelta: 1,
                         word: DEFAULT_SQUARE_WORD,
                         wordFreq: wordsTimesUsed[DEFAULT_SQUARE_WORD] || 0,
                         orient: 'h',
                         ranks: []
-                    }));
+                    });
                 }
 
                 // choose rectangle
-                candidates = sortByProp(candidates, 'ratioDelta');
-                // ratioDelta rank
-                setRanks(candidates, 'ratioDelta', 0);
-                // square rank
-                candidates = sortByProp(candidates, 'square', -1);
-                setRanks(candidates, 'square', 1);
-                // frequency rank
-                candidates = sortByProp(candidates, 'wordFreq');
-                setRanks(candidates, 'wordFreq', 2);
-                for (i = 0; i < candidates.length; i++) {
-                    candidates[i].ranks = 0.2 * candidates[i].ranks[0] +
-                        0.4 * candidates[i].ranks[1] + 0.4 * candidates[i].ranks[2];
-                }
-                candidates = sortByProp(candidates, 'ranks');
-
-                var sameRankIndexLimit = candidates.findIndex(function(candidate, i, arr) {
-                    if (candidate.ranks !== arr[0].ranks) {
-                        return candidate;
+                var winner;
+                if (candidates.length > 1) {
+                    nrm.done('ratioDelta');
+                    nrm.done('square');
+                    nrm.done('wordFreq');
+                    var minRank = Infinity;
+                    var candidatesWithMinRank = [];
+                    for (i = 0; i < candidates.length; i++) {
+                        var rank = 0.2 * nrm.normalize('ratioDelta', candidates[i].ratioDelta) +
+                            0.4 * nrm.normalize('square', candidates[i].square) +
+                            0.4 * nrm.normalize('wordFreq', candidates[i].wordFreq);
+                        if (minRank > rank) {
+                            candidatesWithMinRank = [candidates[i]];
+                            minRank = rank;
+                        }
+                        if (minRank === rank) {
+                            candidatesWithMinRank.push(candidates[i]);
+                        }
                     }
-                });
-                var selectedRectIndex;
-                if (Math.abs(sameRankIndexLimit) === 1) {
-                    selectedRectIndex = 0;
+                    if (
+                        candidatesWithMinRank.length === 1 ||
+                        state.source === VIDEO_MODE // no random blinking for video mode
+                    ) {
+                        winner = candidatesWithMinRank[0];
+                    } else {
+                        winner = candidatesWithMinRank[Math.floor(Math.random() * candidatesWithMinRank.length)];
+                    }
                 } else {
-                    selectedRectIndex = Math.floor(Math.random() * sameRankIndexLimit);
+                    winner = candidates[0];
                 }
+
                 var selectedRect = {
-                    top: candidates[selectedRectIndex].pos[0][0] * state.gridSize,
-                    right: candidates[selectedRectIndex].pos[1][1] * state.gridSize + state.gridSize,
-                    bottom: candidates[selectedRectIndex].pos[1][0] * state.gridSize + state.gridSize,
-                    left: candidates[selectedRectIndex].pos[0][1] * state.gridSize
+                    top: winner.pos[0][0] * state.gridSize,
+                    right: winner.pos[1][1] * state.gridSize + state.gridSize,
+                    bottom: winner.pos[1][0] * state.gridSize + state.gridSize,
+                    left: winner.pos[0][1] * state.gridSize
                 };
-                if (wordsTimesUsed[candidates[selectedRectIndex].word]) {
-                    wordsTimesUsed[candidates[selectedRectIndex].word]++;
+                if (wordsTimesUsed[winner.word]) {
+                    wordsTimesUsed[winner.word]++;
                 } else {
-                    wordsTimesUsed[candidates[selectedRectIndex].word] = 1;
+                    wordsTimesUsed[winner.word] = 1;
                 }
 
                 // place word
-                outputContext.fillStyle = getColorByParams(state.color, candidates[selectedRectIndex].color);
-                if (candidates[selectedRectIndex].orient === 'h') {
-                    outputContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
-                    outputContext.fillText(
-                        candidates[selectedRectIndex].word,
+                outputCanvas.hidden.ctx.fillStyle = getColorByParams(state.color, winner.color);
+                if (winner.orient === 'h') {
+                    outputCanvas.hidden.ctx.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
+                    outputCanvas.hidden.ctx.fillText(
+                        winner.word,
                         (selectedRect.right - selectedRect.left) / 2 + selectedRect.left,
                         (selectedRect.bottom - selectedRect.top) / 2 + selectedRect.top
                     );
                 } else {
-                    outputContext.save();
-                    outputContext.translate(selectedRect.right, selectedRect.top);
-                    outputContext.rotate(Math.PI / 2);
-                    outputContext.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
-                    outputContext.fillText(
-                        candidates[selectedRectIndex].word,
+                    outputCanvas.hidden.ctx.save();
+                    outputCanvas.hidden.ctx.translate(selectedRect.right, selectedRect.top);
+                    outputCanvas.hidden.ctx.rotate(Math.PI / 2);
+                    outputCanvas.hidden.ctx.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
+                    outputCanvas.hidden.ctx.fillText(
+                        winner.word,
                         (selectedRect.bottom - selectedRect.top) / 2,
                         (selectedRect.right - selectedRect.left) / 2
                     );
-                    outputContext.restore();
+                    outputCanvas.hidden.ctx.restore();
                 }
 
                 // exclude grid cells
                 for (
-                    var selectedRectRow = candidates[selectedRectIndex].pos[0][0];
-                    selectedRectRow <= candidates[selectedRectIndex].pos[1][0];
+                    var selectedRectRow = winner.pos[0][0];
+                    selectedRectRow <= winner.pos[1][0];
                     selectedRectRow++
                 ) {
                     for (
-                        var selectedRectCol = candidates[selectedRectIndex].pos[0][1];
-                        selectedRectCol <= candidates[selectedRectIndex].pos[1][1];
+                        var selectedRectCol = winner.pos[0][1];
+                        selectedRectCol <= winner.pos[1][1];
                         selectedRectCol++
                     ) {
                         excludedCells[selectedRectRow + '_' + selectedRectCol] = true;
@@ -434,8 +483,13 @@
                 }
             }
         }
+        outputCanvas.swap();
     }
 
+    /**
+     * (Re)sets needed canvases sizes
+     * @param {Object} sourceSize
+     */
     function setCanvasSize(sourceSize) {
         var size = {};
         if (window.innerWidth / window.innerHeight > sourceSize.width / sourceSize.height) {
@@ -446,29 +500,33 @@
             size.height = Math.floor(window.innerWidth / sourceSize.width * sourceSize.height)
         }
 
-        outputCanvasNode.width = size.width;
-        outputCanvasNode.height = size.height;
-        var sourceCanvasSize = {
+        outputCanvas.items.forEach(function(item) {
+            item.node.width = size.width;
+            item.node.height = size.height;
+        });
+        sourceCanvasSize = {
             width: Math.round(size.width / state.gridSize),
             height: Math.round(size.height / state.gridSize)
         };
         sourceCanvasNode.width = sourceCanvasSize.width;
         sourceCanvasNode.height = sourceCanvasSize.height;
-        if (videoNode) {
-            videoNode.width = sourceCanvasSize.width;
-            videoNode.height = sourceCanvasSize.height;
-        }
     }
 
+    /**
+     * Forms sorted list of words with calculated size proportions depending on selected font and grid size
+     */
     function formVocabularyMap() {
         var measurementFontSize = 10;
-        outputContext.font = measurementFontSize + 'px ' + state.font;
+        outputCanvas.visible.ctx.font = measurementFontSize + 'px ' + state.font;
         words = state.vocabulary.trim().split(' ')
             .map(function(word) {
                 return {
-                    ratio: outputContext.measureText(word).width / measurementFontSize,
+                    ratio: outputCanvas.visible.ctx.measureText(word).width / measurementFontSize,
                     word: word
                 };
+            })
+            .sort(function(a, b) {
+                return a.ratio - b.ratio;
             });
     }
 
@@ -494,40 +552,6 @@
             }
         }
         return 100;
-    }
-
-    /**
-     * Sets the rank depending on given key. Ranks are not unique
-     * @param {Array} arr
-     * @param {string} key
-     * @param {number} rankIndex
-     */
-    function setRanks(arr, key, rankIndex) {
-        for (var i = 0; i < arr.length; i++) {
-            if (i) {
-                if (arr[i][key] === arr[i - 1][key]) {
-                    arr[i].ranks[rankIndex] = arr[i - 1].ranks[rankIndex];
-                } else {
-                    arr[i].ranks[rankIndex] = arr[i - 1].ranks[rankIndex] + 1;
-                }
-            } else {
-                arr[i].ranks[rankIndex] = 0;
-            }
-        }
-    }
-
-    /**
-     * Sorts array by given property key
-     * @param {Array} arr
-     * @param {string} key
-     * @param {number} order
-     * @returns {Array}
-     */
-    function sortByProp(arr, key, order) {
-        order = order || 1;
-        return arr.sort(function(a, b) {
-            return order * (a[key] - b[key]);
-        });
     }
 
     /**
