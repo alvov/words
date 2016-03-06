@@ -5,6 +5,11 @@
     var DEFAULT_SQUARE_WORD = '??';
     var CHOOSE_IMAGE = 'choose image';
     var CLASSNAME_VIDEO_ON = 'video-on';
+    var ERRORS = {
+        PermissionDeniedError: 'You blocked using your camera for this page',
+        PermissionDismissedError: 'You restricted using your camera for this page',
+        default: 'Video capturing is not available on your device'
+    };
     var IMAGE_MODE = 0;
     var VIDEO_MODE = 1;
     var CAMERA_CONSTRAINTS = {
@@ -182,9 +187,19 @@
                     navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS)
                         .then(function(mediaStream) {
                             videoNode.src = window.URL.createObjectURL(mediaStream);
+                            videoNode.play();
                         })
                         .catch(function(err) {
-                            videoNode.src = '';
+                            var message;
+                            if (err && err.message) {
+                                message = err.message;
+                            } else if (err && err.name) {
+                                message = ERRORS[err.name] || ERRORS.default;
+                            } else {
+                                message = ERRORS.default;
+                            }
+                            alert(message);
+                            setState({ source: IMAGE_MODE });
                         });
                 } else if (videoNode) {
                     videoNode.src = '';
@@ -455,10 +470,10 @@
                         (selectedRect.bottom - selectedRect.top) / 2 + selectedRect.top
                     );
                 } else {
+                    outputCanvas.hidden.ctx.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
                     outputCanvas.hidden.ctx.save();
                     outputCanvas.hidden.ctx.translate(selectedRect.right, selectedRect.top);
                     outputCanvas.hidden.ctx.rotate(Math.PI / 2);
-                    outputCanvas.hidden.ctx.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
                     outputCanvas.hidden.ctx.fillText(
                         winner.word,
                         (selectedRect.bottom - selectedRect.top) / 2,
