@@ -314,13 +314,9 @@
             var gridRowCells = [];
             for (var gridCol = 0; gridCol < sourceCanvasSize.width; gridCol++) {
                 var i = (gridRow * sourceCanvasSize.width + gridCol) * 4;
-                gridRowCells.push({
-                    color: greyScale([
-                        sourceImageData[i],
-                        sourceImageData[i + 1],
-                        sourceImageData[i + 2]
-                    ])
-                });
+                gridRowCells.push(thresholdLightness(
+                    (sourceImageData[i] + sourceImageData[i + 1] + sourceImageData[i + 2]) / 3 * 100 / 255
+                ));
             }
             gridCells.push(gridRowCells);
         }
@@ -329,7 +325,7 @@
         var wordsTimesUsed = {};
         for (gridRow = 0; gridRow < gridCells.length; gridRow++) {
             for (gridCol = 0; gridCol < gridCells[gridRow].length; gridCol++) {
-                if (excludedCells[gridRow + '_' + gridCol] || gridCells[gridRow][gridCol].color === 100) {
+                if (excludedCells[gridRow + '_' + gridCol] || gridCells[gridRow][gridCol] === 100) {
                     continue;
                 }
                 var currentCell = gridCells[gridRow][gridCol];
@@ -339,18 +335,18 @@
                 var maxRow = gridCells.length;
                 while (
                     rightNeighbourIndex < gridCells[gridRow].length &&
-                    gridCells[gridRow][rightNeighbourIndex].color === currentCell.color
+                    gridCells[gridRow][rightNeighbourIndex] === currentCell &&
+                    !excludedCells[gridRow + '_' + rightNeighbourIndex]
                 ) {
                     var bottomNeighbourIndex = gridRow;
                     while (
                         bottomNeighbourIndex < maxRow &&
-                        gridCells[bottomNeighbourIndex][rightNeighbourIndex].color === currentCell.color &&
-                        !excludedCells[bottomNeighbourIndex + '_' + rightNeighbourIndex]
+                        gridCells[bottomNeighbourIndex][rightNeighbourIndex] === currentCell
                     ) {
                         // add new rect
                         var newRect = {
                             pos: [[gridRow, gridCol], [bottomNeighbourIndex, rightNeighbourIndex]],
-                            color: currentCell.color,
+                            color: currentCell,
                             orient: 'h'
                         };
                         newRect.square = (rightNeighbourIndex - gridCol + 1) * (bottomNeighbourIndex - gridRow + 1);
@@ -539,15 +535,6 @@
             .sort(function(a, b) {
                 return a.ratio - b.ratio;
             });
-    }
-
-    /**
-     * Returns pixel lightness value (0 - 100)
-     * @param {Array} rgb
-     */
-    function greyScale(rgb) {
-        var lightness = Math.floor((rgb[0] + rgb[1] + rgb[2]) / 3) * 100 / 255;
-        return thresholdLightness(lightness);
     }
 
     /**
