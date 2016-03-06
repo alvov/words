@@ -64,45 +64,6 @@ count: ${this.entries[name].timings.length}`);
         }
     };
 
-    var outputCanvas = {
-        /**
-         * Add canvas node
-         * @param {HTMLElement} node
-         * @param {boolean} visible
-         */
-        add: function(node, visible) {
-            this.items = this.items || [];
-            this.items.push({
-                node: node,
-                ctx: node.getContext('2d'),
-                visible: visible
-            });
-            this.toggle(this.items.length - 1, visible);
-        },
-
-        /**
-         * Set visibility for given canvas
-         * @param {number} index
-         * @param {boolean} on
-         */
-        toggle: function(index, on) {
-            this.items[index].visible = on;
-            this.items[index].node.style.visibility = on ? 'visible' : 'hidden';
-            this[on ? 'visible' : 'hidden'] = this.items[index];
-        },
-
-        /**
-         * Swap canvases visibilities
-         */
-        swap: function() {
-            var visibleIndex = this.items.findIndex(function(item) {
-                return item.visible;
-            });
-            this.toggle(visibleIndex, false);
-            this.toggle(Number(!visibleIndex), true);
-        }
-    };
-
     var normalization = {
         /**
          * Create value instance
@@ -157,7 +118,6 @@ count: ${this.entries[name].timings.length}`);
 
     window.helpers = {
         perfTest: perfTest,
-        outputCanvas: outputCanvas,
         normalization: normalization
     }
 })();

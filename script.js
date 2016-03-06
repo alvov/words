@@ -26,9 +26,8 @@
 
     var imageNode = new Image();
     var videoNode;
-    var outputCanvas = Object.create(helpers.outputCanvas);
-    outputCanvas.add(document.getElementById('canvas'), true);
-    outputCanvas.add(document.body.insertBefore(document.createElement('canvas'), outputCanvas.items[0].node), false);
+    var outputCanvasNode = document.getElementById('canvas');
+    var outputContext = outputCanvasNode.getContext('2d');
 
     var sourceCanvasNode = document.createElement('canvas');
     var sourceContext = sourceCanvasNode.getContext('2d');
@@ -146,7 +145,7 @@
         });
 
         document.links['download-link'].addEventListener('click', function(e) {
-            e.target.href = outputCanvas.visible.node.toDataURL();
+            e.target.href = outputCanvasNode.toDataURL();
             e.target.download = 'wordy-image.png';
         });
 
@@ -298,12 +297,12 @@
     function renderImage(params) {
         // fill canvas background
         var backgroundColorString = getColorByParams(state.bgColor);
-        outputCanvas.hidden.ctx.fillStyle = backgroundColorString;
-        outputCanvas.hidden.ctx.fillRect(0, 0, outputCanvas.visible.node.width, outputCanvas.visible.node.height);
+        outputContext.fillStyle = backgroundColorString;
+        outputContext.fillRect(0, 0, outputCanvasNode.width, outputCanvasNode.height);
         document.body.style.backgroundColor = backgroundColorString;
 
-        outputCanvas.hidden.ctx.textAlign = 'center';
-        outputCanvas.hidden.ctx.textBaseline = 'middle';
+        outputContext.textAlign = 'center';
+        outputContext.textBaseline = 'middle';
 
         // put image to canvas
         sourceContext.drawImage(params.src, 0, 0, sourceCanvasSize.width, sourceCanvasSize.height);
@@ -461,25 +460,25 @@
                 }
 
                 // place word
-                outputCanvas.hidden.ctx.fillStyle = getColorByParams(state.color, winner.color);
+                outputContext.fillStyle = getColorByParams(state.color, winner.color);
                 if (winner.orient === 'h') {
-                    outputCanvas.hidden.ctx.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
-                    outputCanvas.hidden.ctx.fillText(
+                    outputContext.font = (selectedRect.bottom - selectedRect.top) + 'px ' + state.font;
+                    outputContext.fillText(
                         winner.word,
                         (selectedRect.right - selectedRect.left) / 2 + selectedRect.left,
                         (selectedRect.bottom - selectedRect.top) / 2 + selectedRect.top
                     );
                 } else {
-                    outputCanvas.hidden.ctx.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
-                    outputCanvas.hidden.ctx.save();
-                    outputCanvas.hidden.ctx.translate(selectedRect.right, selectedRect.top);
-                    outputCanvas.hidden.ctx.rotate(Math.PI / 2);
-                    outputCanvas.hidden.ctx.fillText(
+                    outputContext.font = (selectedRect.right - selectedRect.left) + 'px ' + state.font;
+                    outputContext.save();
+                    outputContext.translate(selectedRect.right, selectedRect.top);
+                    outputContext.rotate(Math.PI / 2);
+                    outputContext.fillText(
                         winner.word,
                         (selectedRect.bottom - selectedRect.top) / 2,
                         (selectedRect.right - selectedRect.left) / 2
                     );
-                    outputCanvas.hidden.ctx.restore();
+                    outputContext.restore();
                 }
 
                 // exclude grid cells
@@ -498,7 +497,6 @@
                 }
             }
         }
-        outputCanvas.swap();
     }
 
     /**
@@ -515,10 +513,8 @@
             size.height = Math.floor(window.innerWidth / sourceSize.width * sourceSize.height)
         }
 
-        outputCanvas.items.forEach(function(item) {
-            item.node.width = size.width;
-            item.node.height = size.height;
-        });
+        outputCanvasNode.width = size.width;
+        outputCanvasNode.height = size.height;
         sourceCanvasSize = {
             width: Math.round(size.width / state.gridSize),
             height: Math.round(size.height / state.gridSize)
@@ -532,11 +528,11 @@
      */
     function formVocabularyMap() {
         var measurementFontSize = 10;
-        outputCanvas.visible.ctx.font = measurementFontSize + 'px ' + state.font;
+        outputContext.font = measurementFontSize + 'px ' + state.font;
         words = state.vocabulary.trim().split(' ')
             .map(function(word) {
                 return {
-                    ratio: outputCanvas.visible.ctx.measureText(word).width / measurementFontSize,
+                    ratio: outputContext.measureText(word).width / measurementFontSize,
                     word: word
                 };
             })
