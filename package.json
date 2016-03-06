@@ -1,6 +1,6 @@
 {
   "name": "Words",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "devDependencies": {
     "http-server": "0.8.5"
   },
