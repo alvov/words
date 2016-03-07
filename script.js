@@ -321,11 +321,10 @@
             gridCells.push(gridRowCells);
         }
 
-        var excludedCells = {};
         var wordsTimesUsed = {};
         for (gridRow = 0; gridRow < gridCells.length; gridRow++) {
             for (gridCol = 0; gridCol < gridCells[gridRow].length; gridCol++) {
-                if (excludedCells[gridRow + '_' + gridCol] || gridCells[gridRow][gridCol] === 100) {
+                if (gridCells[gridRow][gridCol] === 100) {
                     continue;
                 }
                 var currentCell = gridCells[gridRow][gridCol];
@@ -335,8 +334,7 @@
                 var maxRow = gridCells.length;
                 while (
                     rightNeighbourIndex < gridCells[gridRow].length &&
-                    gridCells[gridRow][rightNeighbourIndex] === currentCell &&
-                    !excludedCells[gridRow + '_' + rightNeighbourIndex]
+                    gridCells[gridRow][rightNeighbourIndex] === currentCell
                 ) {
                     var bottomNeighbourIndex = gridRow;
                     while (
@@ -385,8 +383,7 @@
                                 ratioDelta: ratioDelta,
                                 word: words[j].word,
                                 wordFreq: currentWordFreq,
-                                orient: currentCellRectangles[i].orient,
-                                ranks: []
+                                orient: currentCellRectangles[i].orient
                             });
                             nrm.push('ratioDelta', ratioDelta);
                             nrm.push('square', currentCellRectangles[i].square);
@@ -406,8 +403,7 @@
                         ratioDelta: 1,
                         word: DEFAULT_SQUARE_WORD,
                         wordFreq: wordsTimesUsed[DEFAULT_SQUARE_WORD] || 0,
-                        orient: 'h',
-                        ranks: []
+                        orient: 'h'
                     });
                 }
 
@@ -421,13 +417,12 @@
                     var candidatesWithMinRank = [];
                     for (i = 0; i < candidates.length; i++) {
                         var rank = 0.2 * nrm.normalize('ratioDelta', candidates[i].ratioDelta) +
-                            0.4 * nrm.normalize('square', candidates[i].square) +
+                            0.4 * (1 - nrm.normalize('square', candidates[i].square)) +
                             0.4 * nrm.normalize('wordFreq', candidates[i].wordFreq);
                         if (minRank > rank) {
                             candidatesWithMinRank = [candidates[i]];
                             minRank = rank;
-                        }
-                        if (minRank === rank) {
+                        } else if (minRank === rank) {
                             candidatesWithMinRank.push(candidates[i]);
                         }
                     }
@@ -488,7 +483,7 @@
                         selectedRectCol <= winner.pos[1][1];
                         selectedRectCol++
                     ) {
-                        excludedCells[selectedRectRow + '_' + selectedRectCol] = true;
+                        gridCells[selectedRectRow][selectedRectCol] = 100;
                     }
                 }
             }

@@ -112,7 +112,7 @@ count: ${this.entries[name].timings.length}`);
             if (item.divider) {
                 return (value - item.min) / item.divider;
             }
-            return value;
+            return 0;
         }
     };
 
